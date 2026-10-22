@@ -24,7 +24,9 @@ const routes = [
 function previewHtml(html) {
   return html
     .replace('<html lang="en">', '<html lang="en" data-static-preview>')
+    .replace('<head>', '<head><meta name="robots" content="noindex,nofollow">')
     .replaceAll('href="/', `href="${prefix}/`)
+    .replaceAll('data-image="/', `data-image="${prefix}/`)
     .replaceAll('src="/', `src="${prefix}/`);
 }
 
@@ -40,11 +42,9 @@ try {
   }
   cpSync(path.join(root, 'public', 'media'), path.join(output, 'media'), { recursive: true });
   cpSync(path.join(root, 'public', 'favicon.svg'), path.join(output, 'favicon.svg'));
+  cpSync(path.join(root, 'public', 'downloads'), path.join(output, 'downloads'), { recursive: true });
   cpSync(path.join(root, 'web', 'style.css'), path.join(output, 'style.css'));
-  const appScript = readFileSync(path.join(root, 'web', 'app.js'), 'utf8').replace(
-    "form.addEventListener('submit',async e=>{e.preventDefault();",
-    "form.addEventListener('submit',async e=>{e.preventDefault();if(document.documentElement.dataset.staticPreview!==undefined){$('#form-status').textContent='Preview mode: your test enquiry was not sent. Email sales@wugan.com for a live enquiry.';return;}",
-  );
+  const appScript = readFileSync(path.join(root, 'web', 'app.js'), 'utf8');
   writeFileSync(path.join(output, 'app.js'), appScript);
   writeFileSync(path.join(output, '请先阅读.txt'), [
     'WUGAN NAS 静态预览版',
