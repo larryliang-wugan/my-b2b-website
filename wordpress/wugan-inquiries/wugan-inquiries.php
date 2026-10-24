@@ -2,14 +2,14 @@
 /**
  * Plugin Name: WUGAN Inquiries
  * Description: Private inquiry records, email notifications and an integration hook.
- * Version: 1.1.1
+ * Version: 1.1.2
  * Requires PHP: 8.1
  */
 if (!defined('ABSPATH')) { exit; }
 add_filter('admin_footer_text', function ($text) {
     $screen = get_current_screen();
     if ($screen && 'wugan_inquiry' === $screen->post_type) {
-        return 'WUGAN Inquiries v1.1.1';
+        return 'WUGAN Inquiries v1.1.2';
     }
     return $text;
 });
@@ -33,7 +33,7 @@ function wugan_request_types() {
 }
 // Receipt cookies contain only random tokens; no customer data goes into URLs or cookies.
 add_action('template_redirect', function () {
-    if (is_page('contact') || isset($_GET['inquiry'])) {
+    if (is_page(array('contact', 'samples')) || isset($_GET['inquiry'])) {
         if (!defined('DONOTCACHEPAGE')) { define('DONOTCACHEPAGE', true); }
         nocache_headers();
         header('Referrer-Policy: no-referrer');
@@ -92,7 +92,7 @@ add_shortcode('wugan_inquiry', function ($attributes = []) {
         <label>Company *<input name="company" required maxlength="180" autocomplete="organization"></label>
         <label>Country / region *<input name="country" required maxlength="100" autocomplete="country-name"></label>
         <label>Product *<select name="product" required><option value="">Select a product</option><?php foreach ($products as $key=>$label) : ?><option value="<?php echo esc_attr($key); ?>" <?php selected($product, $key); ?>><?php echo esc_html($label); ?></option><?php endforeach; ?></select></label>
-        <label>Estimated quantity<input type="number" name="quantity" min="1" max="100000000" step="1"></label>
+        <label>Estimated quantity<input type="number" name="quantity" min="1" max="100000000" step="1"><small class="policy-hint">MOQ: 300 pieces per style, per color, across up to 4 sizes. Sample requests are welcome.</small></label>
         <label>Request type *<select name="request_type" required><?php foreach (wugan_request_types() as $type) : ?><option <?php selected($request, $type); ?>><?php echo esc_html($type); ?></option><?php endforeach; ?></select></label>
         <label class="wide">Project details *<textarea name="message" rows="6" required maxlength="6000"><?php echo esc_textarea($reference); ?></textarea><small>Include fabric, branding, destination and your target date. Email your tech pack to <a href="mailto:sales@wugan.net">sales@wugan.net</a> with your inquiry reference.</small></label>
         <label class="wugan-trap" aria-hidden="true">Leave blank<input name="website_confirm" tabindex="-1" autocomplete="off"></label>

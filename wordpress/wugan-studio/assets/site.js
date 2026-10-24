@@ -11,6 +11,13 @@
  document.querySelectorAll('.nav-toggle').forEach(el=>{el.textContent='';const icon=document.createElement('i');icon.dataset.lucide='menu';el.append(icon)});
  if(window.lucide)window.lucide.createIcons();
  const params = new URLSearchParams(location.search);
+ document.querySelectorAll('form[data-preview-form] select[name=product]').forEach(select=>{
+  const reference=params.get('product');
+  if(reference&&!Array.from(select.options).some(o=>o.value===reference)){
+   const option=document.createElement('option');option.value=reference;option.textContent=reference;select.append(option);
+   const message=select.form.querySelector('textarea[name=message]');if(message&&!message.value)message.value='Interested in '+reference+'.\n';
+  }
+ });
  document.querySelectorAll('.desktop-nav .product-menu').forEach(menu=>{
   menu.addEventListener('mouseenter',()=>{if(matchMedia('(hover:hover)').matches)menu.open=true});
   menu.addEventListener('mouseleave',()=>{if(!menu.contains(document.activeElement))menu.open=false});

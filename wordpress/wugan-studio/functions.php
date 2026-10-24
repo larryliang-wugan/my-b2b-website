@@ -6,8 +6,14 @@ add_action('after_setup_theme', function () {
     add_theme_support('post-thumbnails');
     add_theme_support('custom-logo');
     add_theme_support('html5', array('search-form', 'gallery', 'caption', 'style', 'script'));
+    // Imported layouts contain complete HTML; automatic paragraphs break grid children.
+    remove_filter('the_content', 'wpautop');
+    add_filter('the_content', function ($content) {
+        return get_post_meta(get_the_ID(), '_wugan_layout', true) || has_blocks($content) ? $content : wpautop($content);
+    });
 });
 add_action('wp_enqueue_scripts', function () {
+    wp_enqueue_style('wugan-editorial', get_theme_file_uri('/assets/editorial.css'), array('wugan-site'), filemtime(get_theme_file_path('/assets/editorial.css')));
     wp_enqueue_script('wugan-icons', get_theme_file_uri('/assets/lucide.min.js'), array(), '0.468', true);
     foreach (array('css', 'js') as $ext) {
         $path = '/assets/site.' . $ext;
@@ -103,6 +109,20 @@ add_action('pre_get_posts', function ($query) {
 add_filter('template_include', function ($template) {
     return is_tax('wugan_category') || is_search() ? get_theme_file_path('/archive-wugan_product.php') : $template;
 });
+add_filter('posts_search', function ($search, $query) {
+    global $wpdb;
+    $term = trim((string) $query->get('s'));
+    if (is_admin() || 'wugan_product' !== $query->get('post_type') || !preg_match('/^[a-z]{1,4}[0-9]{3,6}$/i', $term)) { return $search; }
+    $search = $wpdb->prepare(" AND EXISTS (SELECT 1 FROM {$wpdb->postmeta} sku WHERE sku.post_id = {$wpdb->posts}.ID AND sku.meta_key = '_wugan_code' AND sku.meta_value = %s)", strtoupper($term));
+    if (!is_user_logged_in()) { $search .= " AND {$wpdb->posts}.post_password = ''"; }
+    return $search;
+}, 10, 2);
+
+add_action('wp_head', function () {
+    if (!is_front_page()) { return; }
+    $organization = array('@context' => 'https://schema.org', '@type' => 'Organization', 'name' => 'WUGAN', 'url' => home_url('/'), 'logo' => get_theme_file_uri('/assets/logo.png'), 'email' => 'sales@wugan.net', 'telephone' => '+86-13692352052');
+    echo '<script type="application/ld+json">' . wp_json_encode($organization, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . '</script>';
+});
 
 function wugan_product_card() {
     $terms = wp_get_post_terms(get_the_ID(), 'wugan_category', array('fields' => 'slugs'));
@@ -155,7 +175,7 @@ add_shortcode('wugan_catalog', function ($attributes) {
 });
 
 function wugan_product_grid($args) {
-    $query = new WP_Query(array_merge(array('post_type' => 'wugan_product', 'post_status' => 'publish', 'posts_per_page' => 4, 'no_found_rows' => true, 'ignore_sticky_posts' => true), $args));
+    $query = new WP_Query(array_merge(array('post_type' => 'wugan_product', 'post_status' => 'publish', 'posts_per_page' => 4, 'no_found_rows' => true, 'ignore_sticky_posts' => true, 'orderby' => 'title', 'order' => 'ASC'), $args));
     ob_start();
     if ($query->have_posts()) {
         echo '<div class="product-grid">';
@@ -262,6 +282,12 @@ JS
 });
 
 add_action('add_meta_boxes', function () {
+    add_meta_box('wugan-specifications', 'Product development specifications', function ($post) {
+        wp_nonce_field('wugan_save_specs', 'wugan_specs_nonce');
+        foreach (array('fabric' => 'Material direction', 'fit' => 'Fit / silhouette', 'construction' => 'Construction details') as $key => $label) {
+            echo '<p><label>' . esc_html($label) . '<input class="widefat" name="wugan_' . esc_attr($key) . '" value="' . esc_attr(get_post_meta($post->ID, '_wugan_' . $key, true)) . '"></label></p>';
+        }
+    }, 'wugan_product', 'normal');
     add_meta_box('wugan-page-images', 'Page images', function ($post) {
         wp_nonce_field('wugan_save_page_images', 'wugan_page_images_nonce');
         $replacements = get_post_meta($post->ID, '_wugan_page_images', true);
@@ -299,6 +325,11 @@ add_action('save_post', function ($id) {
 });
 add_action('save_post_wugan_product', function ($id) {
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE || wp_is_post_revision($id) || !current_user_can('edit_post', $id)) { return; }
+    if (isset($_POST['wugan_specs_nonce']) && is_string($_POST['wugan_specs_nonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['wugan_specs_nonce'])), 'wugan_save_specs')) {
+        foreach (array('fabric', 'fit', 'construction') as $key) {
+            if (isset($_POST['wugan_' . $key]) && is_string($_POST['wugan_' . $key])) { update_post_meta($id, '_wugan_' . $key, sanitize_text_field(wp_unslash($_POST['wugan_' . $key]))); }
+        }
+    }
     if (!isset($_POST['wugan_product_nonce']) || !is_string($_POST['wugan_product_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['wugan_product_nonce'])), 'wugan_save_product')) { return; }
     if (isset($_POST['wugan_code']) && is_string($_POST['wugan_code'])) { update_post_meta($id, '_wugan_code', sanitize_text_field(wp_unslash($_POST['wugan_code']))); }
     if (isset($_POST['wugan_gallery']) && is_string($_POST['wugan_gallery'])) {
@@ -336,9 +367,9 @@ function wugan_import_image($source, $parent = 0) {
 
 add_action('admin_menu', function () {
     add_theme_page('Wugan setup', 'Wugan setup', 'manage_options', 'wugan-setup', function () {
-        ?><div class="wrap"><h1>Wugan setup</h1><p>WUGAN Studio v<?php echo esc_html(wp_get_theme()->get('Version')); ?></p><p>Add missing pages, products and media from the theme data. Existing content is never overwritten.</p>
+        ?><div class="wrap"><h1>Wugan setup</h1><p>WUGAN Studio v<?php echo esc_html(wp_get_theme()->get('Version')); ?></p><p>Add missing pages, products and media. Existing content is preserved unless you explicitly select the release upgrade below. Back up your database and test on staging first.</p>
         <?php if (isset($_GET['complete'])) { ?><div class="notice notice-success"><p>Setup finished. Existing content was preserved. Review Pages, Products, and Settings &gt; Reading.</p></div><?php } ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"><input type="hidden" name="action" value="wugan_setup"><?php wp_nonce_field('wugan_setup'); submit_button('Add starter content'); ?></form></div><?php
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"><input type="hidden" name="action" value="wugan_setup"><?php wp_nonce_field('wugan_setup'); ?><p><label><input type="checkbox" name="upgrade_release" value="1"> Replace the bundled pages with this release. Current content and descriptions are backed up in post metadata; WordPress revisions are also saved. This replaces edits on matching pages, not products or inquiries.</label></p><?php submit_button('Import selected content'); ?></form></div><?php
     });
 });
 add_action('admin_post_wugan_setup', function () {
@@ -347,20 +378,41 @@ add_action('admin_post_wugan_setup', function () {
     $file = get_theme_file_path('/data/site.json');
     $data = is_readable($file) ? json_decode(file_get_contents($file), true) : null;
     if (!is_array($data) || !isset($data['pages'], $data['products']) || !is_array($data['pages']) || !is_array($data['products'])) { wp_die('The theme data/site.json file is missing or invalid.'); }
+    $upgrade = isset($_POST['upgrade_release']) && '1' === $_POST['upgrade_release'];
     foreach ($data['pages'] as $slug => $page) {
-        if (!is_array($page) || !isset($page['title'], $page['content']) || get_page_by_path(sanitize_title($slug), OBJECT, 'page')) { continue; }
+        if (!is_array($page) || !isset($page['title'], $page['content'])) { continue; }
+        $existing = get_page_by_path(sanitize_title($slug), OBJECT, array('page'));
+        if ($existing) {
+            if (!$upgrade) { continue; }
+            add_post_meta($existing->ID, '_wugan_release_backup', wp_slash(array('at' => gmdate('c'), 'release' => wp_get_theme()->get('Version'), 'title' => $existing->post_title, 'content' => $existing->post_content, 'description' => get_post_meta($existing->ID, '_wugan_description', true), 'images' => get_post_meta($existing->ID, '_wugan_page_images', true))));
+            wp_save_post_revision($existing->ID);
+            $updated = wp_update_post(wp_slash(array('ID' => $existing->ID, 'post_title' => sanitize_text_field($page['title']), 'post_content' => wp_kses_post(wugan_expand_content($page['content'])))), true);
+            if (is_wp_error($updated)) { wp_die(esc_html($updated->get_error_message())); }
+            update_post_meta($existing->ID, '_wugan_description', sanitize_text_field($page['description'] ?? ''));
+            update_post_meta($existing->ID, '_wugan_layout', 'editorial-2');
+            continue;
+        }
         $id = wp_insert_post(wp_slash(array('post_type' => 'page', 'post_status' => 'publish', 'post_name' => sanitize_title($slug), 'post_title' => sanitize_text_field($page['title']), 'post_content' => wp_kses_post(wugan_expand_content($page['content'])))), true);
         if (is_wp_error($id)) { wp_die(esc_html($id->get_error_message())); }
         add_post_meta($id, '_wugan_description', sanitize_text_field($page['description'] ?? ''), true);
+        update_post_meta($id, '_wugan_layout', 'editorial-2');
         if ('privacy' === $slug && (!get_option('wp_page_for_privacy_policy') || 'publish' !== get_post_status(get_option('wp_page_for_privacy_policy')))) { update_option('wp_page_for_privacy_policy', $id); }
         if ('home' === $slug && !get_option('page_on_front') && 'posts' === get_option('show_on_front')) { update_option('page_on_front', $id); update_option('show_on_front', 'page'); }
     }
     foreach ($data['products'] as $product) {
-        if (!is_array($product) || empty($product['slug']) || empty($product['title']) || get_page_by_path(sanitize_title($product['slug']), OBJECT, 'wugan_product')) { continue; }
+        if (!is_array($product) || empty($product['slug']) || empty($product['title'])) { continue; }
+        $existing_product = get_page_by_path(sanitize_title($product['slug']), OBJECT, array('wugan_product'));
+        if ($existing_product) {
+            foreach (array('fabric', 'fit', 'construction') as $key) {
+                if (!metadata_exists('post', $existing_product->ID, '_wugan_' . $key)) { add_post_meta($existing_product->ID, '_wugan_' . $key, sanitize_text_field($product[$key] ?? ''), true); }
+            }
+            continue;
+        }
         $id = wp_insert_post(wp_slash(array('post_type' => 'wugan_product', 'post_status' => 'publish', 'post_name' => sanitize_title($product['slug']), 'post_title' => sanitize_text_field($product['title']), 'post_content' => wp_kses_post(wugan_expand_content($product['description'] ?? '')))), true);
         if (is_wp_error($id)) { wp_die(esc_html($id->get_error_message())); }
         if (!empty($product['category'])) { wp_set_object_terms($id, sanitize_text_field($product['category']), 'wugan_category'); }
         add_post_meta($id, '_wugan_code', sanitize_text_field($product['code'] ?? ''), true);
+        foreach (array('fabric', 'fit', 'construction') as $key) { add_post_meta($id, '_wugan_' . $key, sanitize_text_field($product[$key] ?? ''), true); }
         $featured = wugan_import_image($product['image'] ?? '', $id);
         if ($featured) { set_post_thumbnail($id, $featured); }
         $gallery = array();

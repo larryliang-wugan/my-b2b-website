@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from 'node:fs/promises';
+import { redesign } from './studio-v2-design.mjs';
 const A='{{asset}}', H='{{home}}';
 const img=(src,alt,cls='')=>`<img class="${cls}" src="${A}/${src}" alt="${alt}" loading="lazy" decoding="async">`;
 const link=(url,text,cls='button')=>`<a class="${cls}" href="${H}/${url}/">${text}<span aria-hidden="true">↗</span></a>`;
@@ -53,7 +54,8 @@ for (const page of Object.values(pages)) page.content = page.content.replaceAll(
 pages.home.content = pages.home.content.replace(grid(products.slice(0,4)), '[wugan_featured]');
 pages.underwear.content = intro('PRIVATE-LABEL PRODUCT DEVELOPMENT','Your next collection<br>starts with the right fit.','Explore sample silhouettes, then make them your own with materials, colors, branding and packaging.') + '[wugan_catalog]' + cta();
 for (const page of Object.values(pages)) page.content = page.content.replace('contact?product=Athletic%20socks/', 'contact/?product=socks');
+redesign(pages, products);
 await mkdir('wordpress/wugan-studio/data',{recursive:true});
 await writeFile('wordpress/wugan-studio/data/site.json',JSON.stringify({pages,products},null,2));
-await writeFile('wordpress/wugan-studio/assets/product-brief.txt',`WUGAN PRODUCT BRIEF\n\nCompany / website:\nContact name and email:\nProduct type / reference style:\nTarget market and activity:\nFabric composition / weight:\nSize range and measurements:\nColors:\nLogo / waistband / labels:\nPackaging:\nQuantity per style, color and size:\nRequired documentation or testing:\nDestination and target launch date:\n\nSend to sales@wugan.net\nWhatsApp +86 136 9235 2052\n\nMOQ from 300 pcs. Samples from USD 15. Sampling from 7 days. Production from 15 days. Final terms confirmed in your quotation.\n`);
+await writeFile('wordpress/wugan-studio/assets/product-brief.txt',`WUGAN PRODUCT BRIEF\n\nCompany / website:\nContact name and email:\nProduct type / reference style:\nTarget market and activity:\nFabric composition / weight:\nSize range and measurements:\nColors:\nLogo / waistband / labels:\nPackaging:\nQuantity per style, color and size:\nRequired documentation or testing:\nDestination and target launch date:\n\nSend to sales@wugan.net\nWhatsApp +86 136 9235 2052\n\nMOQ: 300 pieces per style, per color, across up to 4 sizes. Samples from USD 15. Sampling from 7 days. Production from 15 days. Final terms confirmed in your quotation.\n`);
 console.log(`Created ${Object.keys(pages).length} pages and ${products.length} product records.`);

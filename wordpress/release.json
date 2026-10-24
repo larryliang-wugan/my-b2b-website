@@ -1,11 +1,11 @@
 {
-  "release": "WUGAN-2026.10.23-01",
-  "website_version": "2.0.0",
-  "theme": { "slug": "wugan-studio", "version": "2.0.0" },
-  "inquiries": { "slug": "wugan-inquiries", "version": "1.1.1" },
-  "preview_version": "2.0.0",
+  "release": "WUGAN-2026.10.24-02",
+  "website_version": "2.0.1",
+  "theme": { "slug": "wugan-studio", "version": "2.0.1" },
+  "inquiries": { "slug": "wugan-inquiries", "version": "1.1.2" },
+  "preview_version": "2.0.1",
   "target": "https://wugan.net",
-  "production_deployment": "pending_connection",
+  "production_deployment": "pending_deployment_chat",
   "digitalocean": { "droplet_id": "611624946", "applied_release": null },
   "cloudflare": { "zone_name": "wugan.net", "applied_release": null },
   "okki": { "integration_status": "not_connected" }
