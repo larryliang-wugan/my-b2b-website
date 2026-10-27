@@ -4,7 +4,7 @@ import path from 'node:path';
 const {chromium}=createRequire(import.meta.url)('playwright');
 const base=process.env.WUGAN_TEST_URL||'http://localhost:8090';
 const site=JSON.parse(await readFile('wordpress/wugan-studio/data/site.json','utf8'));
-const root=path.resolve('review/WUGAN-2.0.1-preview');
+const root=path.resolve('review/WUGAN-2.0.2-preview');
 await mkdir(path.join(root,'media'),{recursive:true});
 const routes=['/',...Object.keys(site.pages).filter(x=>x!=='home').map(x=>`/${x}/`),...site.products.map(p=>`/product/${p.slug}/`)];
 const files=new Map();
@@ -45,6 +45,6 @@ try {
   },{base,resources:Object.fromEntries([...files].map(([url,file])=>[url,relative(file)])),links:Object.fromEntries([...routes.map(r=>[r,relative(r==='/'?'index.html':r.slice(1)+'index.html')]),...site.products.map(p=>['/product-category/'+p.category+'/',relative('underwear/index.html')+'?category='+p.category])])});
   await mkdir(path.dirname(path.join(root,target)),{recursive:true});await writeFile(path.join(root,target),await page.content());
  }
- await writeFile(path.join(root,'README.txt'),'WUGAN 2.0.1 offline design review\nOpen index.html after extracting this entire folder.\nThis is a preview of the WordPress theme, not an installable theme. Forms prepare email drafts; no inquiry is saved.\nThe live WordPress theme and plugin are packaged separately.\n');
+ await writeFile(path.join(root,'README.txt'),'WUGAN 2.0.2 offline design review\nOpen index.html after extracting this entire folder.\nThis is a preview of the WordPress theme, not an installable theme. Forms prepare email drafts; no inquiry is saved.\nThe live WordPress theme and plugin are packaged separately.\n');
  console.log(`Exported ${routes.length} actual WordPress pages and ${files.size} resources to ${root}`);
 }finally{await browser.close()}

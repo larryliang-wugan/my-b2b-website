@@ -19,11 +19,17 @@
   }
  });
  document.querySelectorAll('.desktop-nav .product-menu').forEach(menu=>{
-  menu.addEventListener('mouseenter',()=>{if(matchMedia('(hover:hover)').matches)menu.open=true});
-  menu.addEventListener('mouseleave',()=>{if(!menu.contains(document.activeElement))menu.open=false});
-  menu.addEventListener('focusout',event=>{if(!menu.contains(event.relatedTarget))menu.open=false});
+  let closing;
+  const cancel=()=>clearTimeout(closing);
+  const schedule=()=>{cancel();closing=setTimeout(()=>{if(!menu.matches(':hover')&&!menu.contains(document.activeElement))menu.open=false},220)};
+  menu.addEventListener('mouseenter',()=>{cancel();if(matchMedia('(hover:hover)').matches)menu.open=true});
+  menu.addEventListener('mouseleave',schedule);
+  menu.addEventListener('focusin',cancel);
+  menu.addEventListener('focusout',schedule);
+  document.addEventListener('click',event=>{if(!menu.contains(event.target)){cancel();menu.open=false}});
  });
- document.querySelectorAll('.site-header details').forEach(menu=>menu.addEventListener('keydown',event=>{if(event.key==='Escape'){menu.open=false;menu.querySelector('summary').focus()}}));
+ document.querySelectorAll('.site-header details,.language-menu').forEach(menu=>menu.addEventListener('keydown',event=>{if(event.key==='Escape'&&menu.open){event.stopPropagation();menu.open=false;menu.querySelector('summary').focus()}}));
+ document.querySelectorAll('.language-menu').forEach(menu=>document.addEventListener('click',event=>{if(!menu.contains(event.target))menu.open=false}));
  const cards=[...document.querySelectorAll('.catalog .product-card')];
  let category=params.get('category')||'all';
  const search=document.querySelector('[data-product-search]');

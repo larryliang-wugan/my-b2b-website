@@ -1,9 +1,9 @@
 {
-  "release": "WUGAN-2026.10.24-02",
-  "website_version": "2.0.1",
-  "theme": { "slug": "wugan-studio", "version": "2.0.1" },
+  "release": "WUGAN-2026.10.27-01",
+  "website_version": "2.0.2",
+  "theme": { "slug": "wugan-studio", "version": "2.0.2" },
   "inquiries": { "slug": "wugan-inquiries", "version": "1.1.2" },
-  "preview_version": "2.0.1",
+  "preview_version": "2.0.2",
   "target": "https://wugan.net",
   "production_deployment": "pending_deployment_chat",
   "digitalocean": { "droplet_id": "611624946", "applied_release": null },

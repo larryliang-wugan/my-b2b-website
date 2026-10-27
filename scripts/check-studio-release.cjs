@@ -5,7 +5,7 @@ const path=require('node:path');
 const http=require('node:http');
 (async()=>{
  const base=process.env.WUGAN_TEST_URL||'http://localhost:8090';
- const root=path.resolve('review/WUGAN-2.0.1-preview');
+ const root=path.resolve('review/WUGAN-2.0.2-preview');
  const site=JSON.parse(fs.readFileSync('wordpress/wugan-studio/data/site.json'));
  const server=http.createServer((req,res)=>{
   const u=new URL(req.url,'http://localhost');const file=path.resolve(root,'.'+decodeURIComponent(u.pathname));
@@ -22,7 +22,7 @@ const http=require('node:http');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`overflow ${width}`);
    await page.locator('img').evaluateAll(a=>Promise.all(a.map(async i=>{i.loading='eager';await i.decode()})));
    await page.waitForTimeout(250);
-   await page.screenshot({path:`review/WUGAN-2.0.1-${width}.png`,fullPage:width===1440||width===390});
+   await page.screenshot({path:`review/WUGAN-2.0.2-${width}.png`,fullPage:width===1440||width===390});
   }
   await page.goto(base+'/?s=CP6108&post_type=wugan_product');assert.equal(await page.locator('.product-card').count(),1);assert.match(await page.locator('.product-card').innerText(),/CP6108/);
   await page.goto(base+'/?s=not-a-real-style&post_type=wugan_product');assert.equal(await page.locator('.empty-state').count(),1);

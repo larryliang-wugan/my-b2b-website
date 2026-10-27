@@ -1,5 +1,6 @@
 <?php
 defined('ABSPATH') || exit;
+require_once get_theme_file_path('/languages.php');
 
 add_action('after_setup_theme', function () {
     add_theme_support('title-tag');
@@ -24,29 +25,6 @@ add_action('wp_enqueue_scripts', function () {
             wp_enqueue_script('wugan-site', get_theme_file_uri($path), array('wugan-icons'), $version, true);
         }
     }
-    wp_add_inline_script('wugan-site', <<<'JS'
-document.querySelectorAll('.desktop-nav .product-menu').forEach(function (menu) {
-    menu.addEventListener('mouseenter', function () {
-        if (window.matchMedia('(hover: hover)').matches) menu.open = true;
-    });
-    menu.addEventListener('mouseleave', function () {
-        if (!menu.contains(document.activeElement)) menu.open = false;
-    });
-    menu.addEventListener('focusout', function (event) {
-        if (!menu.contains(event.relatedTarget)) menu.open = false;
-    });
-});
-document.querySelectorAll('.site-header details').forEach(function (menu) {
-    menu.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape' && menu.open) {
-            event.stopPropagation();
-            menu.open = false;
-            menu.querySelector('summary').focus();
-        }
-    });
-});
-JS
-    );
 });
 add_action('init', function () {
     register_post_type('wugan_product', array(
