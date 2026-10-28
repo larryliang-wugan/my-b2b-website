@@ -1,0 +1,12 @@
+{
+  "name": "第二方案",
+  "version": "1.0.0",
+  "theme": "wugan-second",
+  "inquiry_plugin": "wugan-inquiries",
+  "inquiry_plugin_version": "1.1.2",
+  "pages": 17,
+  "products": 8,
+  "production_deployed": false,
+  "reference": "User-provided offline HTML source; layout only",
+  "previous_scheme": "wugan-studio 2.0.2 remains unchanged"
+}
